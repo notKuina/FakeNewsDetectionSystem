@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Admin Dashboard - Users and Contributions</h1>
+    <button onclick="logout()" class="bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-900">Logout</button>
+
+
+
+  </div>
+
+  <div id="usersContainer" class="space-y-6">
+    <p class="text-gray-600">Loading users...</p>
+  </div>
+
+  <script>
+    function getCSRFToken() {
+      return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+
+    async function fetchUsers() {
+      const container = document.getElementById('usersContainer');
+      container.innerHTML = '<p class="text-gray-600">Loading users...</p>';
+
+      try {
+        const res = await fetch('/adminpanel/users/', {
+          headers: { 'X-CSRFToken': getCSRFToken() },
+          credentials: 'include'
+        });
+        if (!res.ok) throw new Error("Failed to fetch users");
+        const users = await res.json();
+        container.innerHTML = '';
+
+        if (users.length === 0) {
+          container.innerHTML = '<p>No users found.</p>';
+          return;
+        }
+
+        users.forEach(user => {
+          const userDiv = document.createElement('div');
+          userDiv.classList.add('bg-white', 'p-4', 'rounded', 'shadow');
+
+          userDiv.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+              <div>
+                <strong>${user.fname} ${user.lname}</strong> (${user.email})<br/>
+              </div>
+              <button onclick="deleteUser(${user.id})" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-800">Delete User</button>
+            </div>
+            <h3 class="font-semibold mb-1">News Contributions:</h3>
+            <div id="contribs-${user.id}" class="space-y-4">
+              ${user.contributions.length === 0 ? '<p class="text-sm text-gray-500">No contributions</p>' : ''}
+            </div>
+          `;
+
+          container.appendChild(userDiv);
+
+          const contribDiv = document.getElementById(`contribs-${user.id}`);
+          user.contributions.forEach(contrib => {
+            const contribEl = document.createElement('div');
+            contribEl.classList.add('border', 'border-gray-300', 'p-3', 'rounded');
+
+            contribEl.innerHTML = `
+              <input type="text" id="title-${contrib.id}" value="${contrib.title || ''}" placeholder="Title" class="border p-1 w-full mb-1 rounded" />
+              <textarea id="content-${contrib.id}" class="border p-1 w-full mb-1 rounded" rows="3" placeholder="Content">${contrib.content || ''}</textarea>
+              <div class="flex gap-2 mb-1">
+                <button onclick="updateContribution(${contrib.id})" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-800">Update</button>
+                <button onclick="deleteContribution(${contrib.id})" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-800">Delete</button>
+              </div>
+              <div class="flex items-center gap-2">
+                <span>Status: <strong>${contrib.is_approved ? 'Approved' : 'Pending'}</strong></span>
+                ${
+                  !contrib.is_approved 
+                    ? `<select id="csv-select-${contrib.id}" class="border rounded p-1">
+                        <option value="True">True.csv (Real)</option>
+                        <option value="Fake">Fake.csv (Fake)</option>
+                      </select>
+                      <button onclick="approveContribution(${contrib.id})" class="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-800">Approve</button>`
+                    : ''
+                }
+              </div>
+            `;
+
+            contribDiv.appendChild(contribEl);
+          });
+        });
+      } catch (err) {
+        container.innerHTML = `<p class="text-red-500">Error loading users: ${err.message}</p>`;
+      }
+    }
+
+    async function deleteUser(userId) {
+      if (!confirm('Are you sure you want to delete this user?')) return;
+      const res = await fetch(`/adminpanel/users/${userId}/`, {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+      });
+      if (res.ok) {
+        alert('User deleted');
+        fetchUsers();
+      } else {
+        alert('Failed to delete user');
+      }
+    }
+
+    async function deleteContribution(id) {
+      if (!confirm('Delete this contribution?')) return;
+      const res = await fetch(`/adminpanel/contributions/${id}/delete/`, {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': getCSRFToken() }
+      });
+      if (res.ok) {
+        alert('Contribution deleted');
+        fetchUsers();
+      } else {
+        alert('Failed to delete contribution');
+      }
+    }
+
+    async function updateContribution(id) {
+      const title = document.getElementById(`title-${id}`).value;
+      const content = document.getElementById(`content-${id}`).value;
+
+      const res = await fetch(`/adminpanel/contributions/${id}/`, {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({ title, content })
+      });
+
+      if (res.ok) {
+        alert('Contribution updated');
+        fetchUsers();
+      } else {
+        alert('Failed to update contribution');
+      }
+    }
+
+async function approveContribution(id) {
+  const csvType = document.getElementById(`csv-select-${id}`).value;
+
+  const res = await fetch(`/adminpanel/contributions/${id}/approve/${csvType}/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': getCSRFToken(),
+      'Content-Type': 'application/json'
+    }
+  });
+
+  if (res.ok) {
+    const data = await res.json();
+    alert(data.message);  
+    fetchUsers();
+  } else {
+    const errorData = await res.json();
+    alert('Failed to approve contribution: ' + (errorData.error || 'Unknown error'));
+  }
+}
+
+
+function getCSRFToken() {
+  const name = 'csrftoken=';
+  const decodedCookie = decodeURIComponent(document.cookie);
+  const cookies = decodedCookie.split(';');
+  for(let i = 0; i < cookies.length; i++) {
+    let c = cookies[i].trim();
+    if (c.indexOf(name) === 0) {
+      return c.substring(name.length, c.length);
+    }
+  }
+  return '';
+}
+
+  async function logout() {
+    const res = await fetch('/adminpanel/logout/', {
+      method: 'POST',
+      headers: { 'X-CSRFToken': getCSRFToken() },
+        credentials: 'include'
+    });
+    if (res.ok) {
+      window.location.href = '/userauth/login/';
+    } else {
+      alert('Logout failed');
+    }
+  }
+
+    // Load users on page load
+    fetchUsers();
+  </script>
+</body>
+</html>

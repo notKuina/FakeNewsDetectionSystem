@@ -1,0 +1,82 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fake News Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="bg-white p-8 rounded shadow-md w-full max-w-2xl">
+            <h1 class="text-2xl font-bold text-center mb-6">Fake News Detection</h1>
+            
+            <!-- Removed traditional form to use JS fetch -->
+            <label for="news_text" class="block text-gray-700 font-semibold mb-2">Enter your news article:</label>
+            <textarea name="news_text" id="news_text" rows="10" class="w-full p-4 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" required></textarea>
+
+            <div class="mt-4 text-center">
+                <button type="button" onclick="submitInput()" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">Check News</button>
+            </div>
+
+            <div id="message" class="text-red-600 mt-4 text-sm"></div>
+            <div id="outputArea" class="mt-6 text-left"></div>
+        </div>
+    </div>
+
+    <script>
+async function submitInput() {
+    const messageElem = document.getElementById("message");
+    const output = document.getElementById("outputArea");
+    const button = document.querySelector('button[type="button"]');
+
+    messageElem.textContent = "";
+    output.innerHTML = "";
+
+    const input = document.getElementById("news_text").value.trim();
+    if (!input) {
+        messageElem.textContent = "Please enter your news article.";
+        return;
+    }
+
+    output.innerHTML = "<p class='text-blue-600'>Checking...</p>";
+    button.disabled = true;
+    button.textContent = "Checking...";
+
+    try {
+        const response = await fetch("/analyze/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_input: input, method: "text" })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Server error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        output.innerHTML = "";
+
+        if (data.article_text || data.result) {
+            output.innerHTML += `
+                <div class="border border-gray-300 p-4 rounded bg-white shadow-sm">
+                    ${data.article_text ? `<h3 class="font-bold text-xl mb-2 text-gray-800">Article Text:</h3><p class="text-gray-700">${data.article_text}</p>` : ''}
+                    ${data.result ? `<h2 class="text-lg font-bold mt-3 ${data.result.toLowerCase().includes('fake') ? 'text-red-600' : 'text-green-600'}">Prediction: ${data.result}</h2>` : ''}
+                </div>
+            `;
+        } else {
+            output.innerHTML = `<p class="text-red-600">No results found.</p>`;
+        }
+    } catch (error) {
+        messageElem.textContent = "Error processing request. Please try again.";
+        console.error(error);
+    } finally {
+        button.disabled = false;
+        button.textContent = "Check News";
+    }
+}
+
+    </script>
+
+</body>
+</html>

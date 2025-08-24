@@ -1,0 +1,463 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>User Dashboard-Fake News Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+        crossorigin="anonymous"
+    />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+    <style>
+        /* CSS for the blurred background and content overlay */
+        .main-content-area {
+            position: relative;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1;
+            justify-content: center;
+            align-items: center;
+            padding-top: 60px;
+            padding-bottom: 150px;
+            overflow: hidden;
+            min-height: calc(100vh - 60px - 150px);
+            gap: 2rem;
+        }
+
+        .blurred-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("{% static 'img/bgg.jpeg' %}");
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: blur(3px);
+            transform: scale(1.02);
+            z-index: -1;
+        }
+
+        .news-detector-overlay {
+            position: relative;
+            z-index: 1;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .news-detector-overlay input[type="text"],
+        .news-detector-overlay textarea {
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+        }
+    </style>
+</head>
+<body class="bg-white font-['Roboto','sans-serif'] min-h-screen flex flex-col">
+
+    <nav class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-2 border-b-2 border-gray-700 bg-gray-900 h-16">
+        <h1 class="uppercase font-bold text-white text-xl">Fake News Detection System</h1>
+        <div>
+            <a href="{% url 'userauth:logout' %}" title="Logout">
+                <i class="fa-solid fa-arrow-right-from-bracket text-white text-lg"></i>
+            </a>
+        </div>
+    </nav>
+
+    <div class="main-content-area">
+        <div class="blurred-background"></div>
+
+        <div class="news-detector-overlay">
+
+            <section class="mb-6">
+                <h2 class="text-2xl font-bold mb-4" style="font-family: serif;">
+                    Welcome back, {{ first_name|default:request.user.username }}!
+                </h2>
+
+                <h3 class="text-xl font-semibold mb-2">Write New News Contribution</h3>
+                    <input
+                    id="newsTitle"
+                    type="text"
+                    placeholder="Enter news title"
+                    class="w-full p-3 border border-gray-300 rounded-md mb-3 text-lg"
+                />
+
+                <textarea
+                    id="newsContent"
+                    rows="5"
+                    placeholder="Write your news content here..."
+                    class="w-full p-3 border border-gray-300 rounded-md resize-y text-lg"
+                ></textarea>
+
+                <button
+                    onclick="submitNews()"
+                    class="w-[200px] h-[50px] rounded-2xl bg-blue-950 text-white font-semibold hover:bg-blue-800 transition-colors shadow-md mt-4"
+                >
+                    Submit Contribution
+                </button>
+
+                <button
+                    id="toggleContributionsBtn"
+                    onclick="toggleContributions()"
+                    class="w-[200px] h-[50px] rounded-2xl bg-gray-600 text-white font-semibold hover:bg-gray-700 transition-colors shadow-md mt-4"
+                >
+                    Show My Contributions
+                </button>
+
+                <div
+                    id="contributionMessage" class="hidden mt-4 p-3 rounded border text-green-700 bg-green-100"
+                    role="alert"
+                ></div>
+            </section>
+
+            <section id="contributionsSection" class="hidden">
+                <h3 class="text-3xl font-semibold mb-6">Your Contributions:</h3>
+                <div id="contributionsList" class="space-y-8"></div>
+            </section>
+        </div>
+    </div>
+
+    <footer class="bg-gray-900 text-white py-12 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <h1 class="uppercase font-bold text-xl">Fake News Detection System</h1>
+                    </div>
+                    <p class="text-gray-400 font-sans text-sm">Your trusted news detector</p>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-4 text-lg">Contact US</h3>
+                    <ul class="space-y-2">
+                        <li>
+                            <a href="https://www.instagram.com/your-profile" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors font-medium flex items-center space-x-2">
+                                <i data-lucide="instagram" class="w-5 h-5"></i>
+                                <span>Instagram</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://www.reddit.com/r/your-subreddit" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors font-medium flex items-center space-x-2">
+                                <i data-lucide="reddit" class="w-5 h-5"></i>
+                                <span>Reddit</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="https://discord.gg/your-invite" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors font-medium flex items-center space-x-2">
+                                <i data-lucide="discord" class="w-5 h-5"></i>
+                                <span>Discord</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-4 text-lg">Customer Service</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">About Us</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">FAQ</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-semibold mb-4 text-lg">Legal</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-500 text-sm">
+                &copy; 2025 Fake News Detection System. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Renamed function to avoid conflict with `showMessage` for news detection
+        function showContributionMessage(text, isError = false) {
+            const msgDiv = document.getElementById('contributionMessage');
+            msgDiv.textContent = text;
+            if (isError) {
+                msgDiv.classList.remove('bg-green-100', 'text-green-700');
+                msgDiv.classList.add('bg-red-100', 'text-red-700', 'border-red-700');
+            } else {
+                msgDiv.classList.remove('bg-red-100', 'text-red-700', 'border-red-700');
+                msgDiv.classList.add('bg-green-100', 'text-green-700');
+            }
+            msgDiv.classList.remove('hidden');
+
+            // Auto hide after 5 seconds
+            clearTimeout(msgDiv._timeout);
+            msgDiv._timeout = setTimeout(() => {
+                msgDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Show success or error messages inside the page for news detection
+        function showNewsDetectionMessage(text, isError = false) {
+            const msgDiv = document.getElementById('message'); // Original message div for news detection
+            if (!msgDiv) return; // guard if message div does not exist
+            msgDiv.textContent = text;
+            if (isError) {
+                msgDiv.classList.remove('bg-green-100', 'text-green-700');
+                msgDiv.classList.add('bg-red-100', 'text-red-700', 'border-red-700');
+            } else {
+                msgDiv.classList.remove('bg-red-100', 'text-red-700', 'border-red-700');
+                msgDiv.classList.add('bg-green-100', 'text-green-700');
+            }
+            msgDiv.classList.remove('hidden');
+
+            clearTimeout(msgDiv._timeout);
+            msgDiv._timeout = setTimeout(() => {
+                msgDiv.classList.add('hidden');
+            }, 5000);
+        }
+
+        // Placeholder for news detection submit function
+        async function submitInput() {
+            const userInput = document.getElementById('userInput').value.trim();
+            const selectedMethod = document.querySelector('input[name="method"]:checked').value;
+
+            if (!userInput) {
+                showNewsDetectionMessage('Please enter a URL or keyword.', true);
+                return;
+            }
+
+            try {
+                // Simulate an API call
+                const response = await new Promise(resolve => setTimeout(() => {
+                    if (userInput.includes('fake')) {
+                        resolve({ ok: true, data: { result: 'Fake', details: 'This news contains elements commonly found in fake news articles.' } });
+                    } else if (userInput.includes('real')) {
+                        resolve({ ok: true, data: { result: 'Real', details: 'This news appears to be legitimate.' } });
+                    } else {
+                        resolve({ ok: true, data: { result: 'Uncertain', details: 'Cannot determine with high confidence. More data might be needed.' } });
+                    }
+                }, 1000));
+
+                if (response.ok) {
+                    const outputArea = document.getElementById('outputArea');
+                    outputArea.innerHTML = `
+                        <div class="p-4 ${response.data.result === 'Fake' ? 'bg-red-100 text-red-800' : response.data.result === 'Real' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'} rounded-md">
+                            <p class="font-bold">Result: ${response.data.result}</p>
+                            <p>${response.data.details}</p>
+                        </div>
+                    `;
+                    showNewsDetectionMessage(`News checked: ${response.data.result}`, response.data.result === 'Fake');
+                } else {
+                    showNewsDetectionMessage('Failed to analyze news. Please try again.', true);
+                }
+            } catch (err) {
+                showNewsDetectionMessage('Error analyzing news. Please try again.', true);
+                console.error(err);
+            }
+        }
+
+        // Toggle contributions section visibility and load contributions
+        function toggleContributions() {
+            const section = document.getElementById('contributionsSection');
+            const btn = document.getElementById('toggleContributionsBtn');
+            if (section.classList.contains('hidden')) {
+                section.classList.remove('hidden');
+                btn.textContent = 'Hide My Contributions';
+                loadContributions();
+            } else {
+                section.classList.add('hidden');
+                btn.textContent = 'Show My Contributions';
+            }
+        }
+
+        // Submit a new news contribution
+async function submitNews() {
+    const title = document.getElementById('newsTitle').value.trim();
+    const content = document.getElementById('newsContent').value.trim();
+
+    if (!title || !content) {
+        showContributionMessage('Please provide both a title and content.', true);
+        return;
+    }
+
+    try {
+        const res = await fetch('/submit/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ title, content }),
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            showContributionMessage(data.message || 'Contribution submitted successfully!');
+            document.getElementById('newsTitle').value = '';
+            document.getElementById('newsContent').value = '';
+
+            if (!document.getElementById('contributionsSection').classList.contains('hidden')) {
+                loadContributions();
+            }
+        } else {
+            showContributionMessage(data.error || 'Failed to submit contribution.', true);
+        }
+    } catch (err) {
+        showContributionMessage('Error submitting contribution. Please try again.', true);
+        console.error(err);
+    }
+}
+// Load all user contributions and display them
+async function loadContributions() {
+    try {
+        const res = await fetch('/get_contributions', {
+            method: 'GET',
+            credentials: 'include',
+        });
+
+        const container = document.getElementById('contributionsList');
+        container.innerHTML = '';
+
+        if (!res.ok) {
+            container.innerHTML = '<p class="text-red-600">Unable to load contributions.</p>';
+            return;
+        }
+
+        const contributions = await res.json();
+
+        if (!Array.isArray(contributions) || contributions.length === 0) {
+            container.innerHTML = '<p class="text-gray-600">You have not added any contributions yet.</p>';
+            return;
+        }
+
+        contributions.forEach((c) => {
+            const div = document.createElement('div');
+            div.className = 'border p-6 rounded-xl bg-gray-50 shadow-lg relative text-lg';
+
+            // Status badge for approval
+            const statusBadge = document.createElement('span');
+            statusBadge.textContent = c.is_approved ? 'Approved' : 'Pending';
+            statusBadge.className = c.is_approved
+                ? 'inline-block bg-green-200 text-green-800 px-3 py-1 rounded-full text-xs font-semibold mr-2 mb-3'
+                : 'inline-block bg-yellow-200 text-yellow-800 px-3 py-1 rounded-full text-xs font-semibold mr-2 mb-3';
+
+            // Title input
+            const titleInput = document.createElement('input');
+            titleInput.type = 'text';
+            titleInput.className = 'w-full border rounded px-4 py-2 mb-4 text-lg font-semibold';
+            titleInput.value = c.title || 'Untitled';
+            titleInput.disabled = true;
+            titleInput.setAttribute('data-id', c.id);
+
+            // Content textarea
+            const textarea = document.createElement('textarea');
+            textarea.className = 'w-full border rounded p-4 resize-y text-lg';
+            textarea.value = c.content;
+            textarea.disabled = true;
+            textarea.setAttribute('data-id', c.id);
+
+            // Buttons container
+            const btnContainer = document.createElement('div');
+            btnContainer.className = 'mt-3 flex gap-3 justify-end';
+
+            // Edit button
+            const editBtn = document.createElement('button');
+            editBtn.textContent = 'Edit';
+            editBtn.className = 'bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-sm';
+
+            let isEditing = false;
+
+            editBtn.onclick = async () => {
+                if (!isEditing) {
+                    titleInput.disabled = false;
+                    textarea.disabled = false;
+                    titleInput.focus();
+                    editBtn.textContent = 'Save';
+                    isEditing = true;
+                } else {
+                    const updatedTitle = titleInput.value.trim();
+                    const updatedContent = textarea.value.trim();
+                    if (!updatedTitle || !updatedContent) {
+                        showContributionMessage('Title and content cannot be empty.', true);
+                        return;
+                    }
+                    try {
+                        const res = await fetch(`/edit/${c.id}/`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                            body: JSON.stringify({ title: updatedTitle, content: updatedContent }),
+                        });
+                        const data = await res.json();
+                        if (res.ok) {
+                            showContributionMessage(data.message || 'Contribution updated successfully!');
+                            titleInput.disabled = true;
+                            textarea.disabled = true;
+                            editBtn.textContent = 'Edit';
+                            isEditing = false;
+                        } else {
+                            showContributionMessage(data.error || 'Failed to update contribution.', true);
+                        }
+                    } catch (err) {
+                        showContributionMessage('Error updating contribution.', true);
+                        console.error(err);
+                    }
+                }
+            };
+
+            // Delete button
+            const deleteBtn = document.createElement('button');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.className = 'bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm';
+            deleteBtn.onclick = () => deleteContribution(c.id);
+
+            btnContainer.appendChild(editBtn);
+            btnContainer.appendChild(deleteBtn);
+
+            // Timestamp
+            const timestamp = document.createElement('small');
+            timestamp.className = 'text-gray-500 absolute top-2 right-4 text-sm';
+            timestamp.textContent = `🕒 ${new Date(c.created_at).toLocaleString()}`;
+
+            // Append elements
+            div.appendChild(statusBadge);
+            div.appendChild(titleInput);
+            div.appendChild(textarea);
+            div.appendChild(btnContainer);
+            div.appendChild(timestamp);
+
+            container.appendChild(div);
+        });
+    } catch (err) {
+        document.getElementById('contributionsList').innerHTML =
+            '<p class="text-red-600">Error loading contributions.</p>';
+        console.error(err);
+    }
+}
+
+
+        // Delete contribution from backend
+        async function deleteContribution(id) {
+            if (!confirm('Are you sure you want to delete this news contribution?')) return;
+            try {
+                const res = await fetch(`/delete/${id}/`, {
+                    method: 'DELETE',
+                    credentials: 'include',
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showContributionMessage(data.message || 'New contribution deleted successfully!');
+                    loadContributions();
+                } else {
+                    showContributionMessage(data.error || 'Failed to delete contribution.', true);
+                }
+            } catch (err) {
+                showContributionMessage('Error deleting news contribution.', true);
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fake News Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+    <style>
+        /* A new wrapper div is needed to hold both the blurred background and the content on top */
+        .main-content-area {
+            position: relative; /* Needed for absolute positioning of blurred background */
+            width: 100%;
+            display: flex;
+            flex-direction: column; /* To allow vertical centering of content */
+            flex-grow: 1; /* Allows this wrapper to fill space between header and footer */
+            justify-content: center; /* Vertically center content */
+            align-items: center; /* Horizontally center content */
+            padding-top: 60px; /* Offset for fixed header (adjust to your header's actual height) */
+            padding-bottom: 150px; /* Offset for footer (adjust to your footer's actual height) */
+            overflow: hidden; /* Hide any overflow from blur scale */
+            min-height: calc(100vh - 60px - 150px); /* Ensures it fills the available vertical space */
+        }
+
+        .blurred-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("{% static 'img/bgg.jpeg' %}"); /* Your image path */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: blur(3px); /* Adjust the blur amount here (e.g., 1px, 5px) */
+            transform: scale(1.02); /* Slightly scale to hide potential blur edges */
+            z-index: -1; /* Puts the background behind the content */
+        }
+
+        /* The news-detector-overlay now lives directly inside main-content-area */
+        .news-detector-overlay {
+            position: relative; /* Important: Ensures it stacks above the z-index -1 blurred background */
+            z-index: 1; /* Explicitly puts it on top (though relative position alone often works) */
+            /* Your existing Tailwind classes */
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 2rem; /* Adjusted from p-8 for clearer default rem unit */
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            width: 90%;
+            text-align: center;
+        }
+
+        /* Adjustments for the input field to be more visible on the overlay */
+        .news-detector-overlay input[type="text"] {
+            background-color: #f3f4f6; /* Lighter gray for better contrast */
+            border-color: #d1d5db; /* Slightly darker border */
+        }
+    </style>
+</head>
+<body class="bg-white font-['Roboto','sans-serif'] flex flex-col min-h-screen">
+
+<nav class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between p-2 border-b-2 border-gray-700 bg-gray-900 h-16">
+    <h1 class="uppercase font-bold text-white text-xl">Fake News Detection System</h1>
+    <a href="/userauth/login"><i class="fa-regular fa-user text-white"></i></a>
+</nav>
+
+<div class="main-content-area">
+    <div class="blurred-background"></div>
+
+    <div class="news-detector-overlay">
+        <h2 class="uppercase pt-2 text-2xl font-bold mb-6">Choose a method:</h2>
+
+        <div class="flex justify-center space-x-6 mb-8">
+            <label class="inline-flex items-center text-lg text-gray-700 cursor-pointer">
+                <input type="radio" name="method" value="url" class="form-radio h-5 w-5 text-blue-600">
+                <span class="ml-2">News URL</span>
+            </label>
+            <label class="inline-flex items-center text-lg text-gray-700 cursor-pointer">
+                <input type="radio" name="method" value="dataset" class="form-radio h-5 w-5 text-blue-600">
+                <span class="ml-2">From Dataset</span>
+            </label>
+        </div>
+
+        <div class="mb-8">
+            <input type="text" name="user_input" id="userInput" placeholder="Paste a URL or enter a keyword..."
+                class="w-full px-4 py-3 bg-gray-100 border border-gray-300 text-center placeholder-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg">
+        </div>
+
+        <button type="button" onclick="submitInput()" class="w-40 h-12 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-md">
+            Check News
+        </button>
+
+        <div id="message" class="text-red-600 mt-4 text-sm max-w-xl mx-auto"></div>
+
+        <div id="outputArea" class="mt-6 text-left max-w-xl mx-auto space-y-4"></div>
+    </div>
+</div>
+
+<footer class="bg-gray-900 text-white py-12 mt-auto">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+                <div class="flex items-center space-x-2 mb-4">
+                    <h1 class="uppercase font-bold text-xl">Fake News Detection System</h1>
+                </div>
+                <p class="text-gray-400 font-sans text-sm">Your trusted news detector</p>
+            </div>
+            <div>
+                <h3 class="font-semibold mb-4 text-lg">Contact US</h3>
+                <ul class="space-y-2">
+                    <li>
+                        <a href="https://www.instagram.com/your-profile" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors font-medium flex items-center space-x-2">
+                            <i data-lucide="instagram" class="w-5 h-5"></i>
+                            <span>Instagram</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://www.reddit.com/r/your-subreddit" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors font-medium flex items-center space-x-2">
+                            <i data-lucide="reddit" class="w-5 h-5"></i>
+                            <span>Reddit</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="https://discord.gg/your-invite" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors font-medium flex items-center space-x-2">
+                            <i data-lucide="discord" class="w-5 h-5"></i>
+                            <span>Discord</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold mb-4 text-lg">Customer Service</h3>
+                <ul class="space-y-2">
+                    <li><a href="#" class="text-gray-400 hover:text-white">About Us</a></li>
+                    <li><a href="#" class="text-gray-400 hover:text-white">FAQ</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="font-semibold mb-4 text-lg">Legal</h3>
+                <ul class="space-y-2">
+                    <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+                    <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-500 text-sm">
+            &copy; 2025 Fake News Detection System. All rights reserved.
+        </div>
+    </div>
+</footer>
+<script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    async function submitInput() {
+        const messageElem = document.getElementById("message");
+        const output = document.getElementById("outputArea");
+        const button = document.querySelector('button[type="button"]');
+
+        messageElem.textContent = "";
+        output.innerHTML = "";
+
+        const methodElem = document.querySelector('input[name="method"]:checked');
+        if (!methodElem) {
+            messageElem.textContent = "Please select a method (News URL or From Dataset).";
+            return;
+        }
+
+        const method = methodElem.value;
+        const input = document.getElementById("userInput").value.trim();
+        if (!input) {
+            messageElem.textContent = "Please enter a URL or keyword.";
+            return;
+        }
+
+        output.innerHTML = "<p class='text-blue-600'>Checking...</p>";
+        button.disabled = true;
+        button.textContent = "Checking...";
+
+        try {
+            const csrftoken = getCookie('csrftoken');
+
+            const response = await fetch("/analyze/", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrftoken
+                },
+                body: JSON.stringify({ user_input: input, method: method })
+            });
+            const data = await response.json();
+            output.innerHTML = "";
+
+            if (data.article_text || data.result) {
+                output.innerHTML += `
+                    <div class="border border-gray-300 p-4 m-2 rounded-xl bg-white shadow-sm">
+                        ${data.article_text ? `
+                            <h3 class="font-bold text-xl mb-2 text-gray-800">Fetched Article:</h3>
+                            <p class="text-gray-700 text-sm">${data.article_text}...</p>
+                        ` : ''}
+                        ${data.result ? `
+                            <h2 class="text-lg font-bold ${data.result.toLowerCase().includes('fake') ? 'text-red-600' : 'text-black'} mt-3">Prediction: ${data.result}</h2>
+                        ` : ''}
+                    </div>
+                `;
+            }
+
+            if (data.articles && data.articles.length > 0) {
+                output.innerHTML += "<h2 class='font-bold text-xl mt-4 text-gray-800'>Dataset Results:</h2>";
+                data.articles.forEach(a => {
+                    output.innerHTML += `
+                        <div class="border border-gray-300 p-4 m-2 rounded-xl bg-white shadow-sm">
+                            <strong class="text-gray-800">Title:</strong> <span class="text-gray-700">${a.title}</span> <br>
+                            <strong class="text-gray-800">Excerpt:</strong> <span class="text-gray-700">${a.text}</span> <br>
+                            <strong class="text-gray-800">Predicted:</strong> <span class="${a.predicted.toLowerCase().includes('fake') ? 'text-red-600' : 'text-green-600'}">${a.predicted}</span> |
+                            <strong class="text-gray-800">Actual:</strong> <span class="${a.actual.toLowerCase().includes('fake') ? 'text-red-600' : 'text-green-600'}">${a.actual}</span> <br>
+                            <span class="${a.correct ? 'text-green-600' : 'text-red-600'} text-sm mt-1 block">
+                                ${a.correct ? 'Data fetched correctly' : 'No matching articles found.'}
+                            </span>
+                        </div>
+                    `;
+                });
+            }
+
+            if (!data.result && (!data.articles || data.articles.length === 0)) {
+                output.innerHTML = `<p class="text-red-600 text-center">No results found. Try a valid URL or keyword.</p>`;
+            }
+
+        } catch (error) {
+            output.innerHTML = `<p class="text-red-600 text-center">Error processing request. Please try again.</p>`;
+            console.error(error);
+        } finally {
+            button.disabled = false;
+            button.textContent = "Check News";
+        }
+    }
+</script>
+
+</body>
+</html>
