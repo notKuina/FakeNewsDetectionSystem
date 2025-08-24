@@ -1,0 +1,10 @@
+<h2>Admin Review</h2>
+{% for item in news %}
+  <div>
+    <h3>{{ item.title }}</h3>
+    <p>{{ item.content }}</p>
+    <p>Predicted: {{ item.is_fake|yesno:"Fake,Real" }}</p>
+    <a href="{% url 'update_status' item.id 'approve' %}">Approve</a> |
+    <a href="{% url 'update_status' item.id 'disapprove' %}">Disapprove</a>
+  </div>
+{% endfor %}

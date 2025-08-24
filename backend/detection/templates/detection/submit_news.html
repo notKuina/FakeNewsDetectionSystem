@@ -1,0 +1,7 @@
+<h2>Submit News</h2>
+<form method="post">
+  {% csrf_token %}
+  <input type="text" name="title" placeholder="Title" required><br>
+  <textarea name="content" placeholder="Content..." required></textarea><br>
+  <button type="submit">Submit</button>
+</form>

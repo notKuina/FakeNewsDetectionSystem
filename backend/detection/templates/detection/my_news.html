@@ -1,0 +1,9 @@
+<h2>My Submitted News</h2>
+{% for item in news %}
+  <div>
+    <h4>{{ item.title }}</h4>
+    <p>{{ item.content }}</p>
+    <p>Status: {{ item.status }}</p>
+    <p>Predicted: {{ item.is_fake|yesno:"Fake,Real" }}</p>
+  </div>
+{% endfor %}
