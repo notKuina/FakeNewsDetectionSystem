@@ -211,8 +211,13 @@
                             <h3 class="font-bold text-xl mb-2 text-gray-800">Fetched Article:</h3>
                             <p class="text-gray-700 text-sm">${data.article_text}...</p>
                         ` : ''}
+
                         ${data.result ? `
-                            <h2 class="text-lg font-bold ${data.result.toLowerCase().includes('fake') ? 'text-red-600' : 'text-black'} mt-3">Prediction: ${data.result}</h2>
+                            <h2 class="text-lg font-bold ${
+                                data.result && data.result.toLowerCase().includes('fake')
+                                    ? 'text-red-600'
+                                    : 'text-black'
+                            } mt-3">Prediction: ${data.result}</h2>
                         ` : ''}
                     </div>
                 `;
@@ -223,10 +228,26 @@
                 data.articles.forEach(a => {
                     output.innerHTML += `
                         <div class="border border-gray-300 p-4 m-2 rounded-xl bg-white shadow-sm">
-                            <strong class="text-gray-800">Title:</strong> <span class="text-gray-700">${a.title}</span> <br>
-                            <strong class="text-gray-800">Excerpt:</strong> <span class="text-gray-700">${a.text}</span> <br>
-                            <strong class="text-gray-800">Predicted:</strong> <span class="${a.predicted.toLowerCase().includes('fake') ? 'text-red-600' : 'text-green-600'}">${a.predicted}</span> |
-                            <strong class="text-gray-800">Actual:</strong> <span class="${a.actual.toLowerCase().includes('fake') ? 'text-red-600' : 'text-green-600'}">${a.actual}</span> <br>
+                            <strong class="text-gray-800">Title:</strong> 
+                            <span class="text-gray-700">${a.title || ''}</span> <br>
+
+                            <strong class="text-gray-800">Excerpt:</strong> 
+                            <span class="text-gray-700">${a.text || ''}</span> <br>
+
+                            <strong class="text-gray-800">Predicted:</strong> 
+                            <span class="${
+                                a.predicted && a.predicted.toLowerCase().includes('fake')
+                                    ? 'text-red-600'
+                                    : 'text-green-600'
+                            }">${a.predicted || ''}</span> |
+
+                            <strong class="text-gray-800">Actual:</strong> 
+                            <span class="${
+                                a.actual && a.actual.toLowerCase().includes('fake')
+                                    ? 'text-red-600'
+                                    : 'text-green-600'
+                            }">${a.actual || ''}</span> <br>
+
                             <span class="${a.correct ? 'text-green-600' : 'text-red-600'} text-sm mt-1 block">
                                 ${a.correct ? 'Data fetched correctly' : 'No matching articles found.'}
                             </span>

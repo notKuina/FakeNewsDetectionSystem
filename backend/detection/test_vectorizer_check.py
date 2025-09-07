@@ -13,9 +13,7 @@ VECTORIZER_PATH = os.path.join(BASE_DIR, 'detection', 'model', 'vectorizer.jb')
 TRUE_PATH = os.path.join(BASE_DIR, 'detection', 'data', 'True.csv')
 FAKE_PATH = os.path.join(BASE_DIR, 'detection', 'data', 'Fake.csv')
 
-# Load model & vectorizer once
-model = joblib.load(MODEL_PATH)
-vectorizer = joblib.load(VECTORIZER_PATH)
+
 
 # ---------------------- ANALYZE (Guest input) ----------------------
 @csrf_exempt
@@ -52,9 +50,9 @@ def check_datasets(request):
         true_df = pd.read_csv(TRUE_PATH)
         fake_df = pd.read_csv(FAKE_PATH)
 
-        # Add labels: 1 = Real, 0 = Fake
-        true_df['label'] = 1
-        fake_df['label'] = 0
+        # Add classs: 1 = Real, 0 = Fake
+        true_df['class'] = 1
+        fake_df['class'] = 0
 
         # Combine
         df = pd.concat([true_df, fake_df], ignore_index=True)
