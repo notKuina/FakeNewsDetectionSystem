@@ -80,7 +80,7 @@ WSGI_APPLICATION = 'FakeNews.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql', 
+        'ENGINE': 'mysql.connector.django', 
         'NAME': 'fakenews',
         'USER': 'root',
         'PASSWORD':'root123',
