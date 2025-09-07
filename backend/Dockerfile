@@ -4,13 +4,7 @@ FROM python:3.12-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for mysqlclient
-RUN apt-get update && apt-get install -y \
-    default-libmysqlclient-dev \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy project files into the container
+# Copy project files
 COPY . /app
 
 # Create virtual environment & install Python dependencies
@@ -25,8 +19,5 @@ RUN . /opt/venv/bin/activate && python manage.py collectstatic --noinput
 # Expose port
 EXPOSE 8000
 
-# Run the app with Gunicorn
+# Run app with Gunicorn
 CMD ["/opt/venv/bin/gunicorn", "backend.wsgi:application", "--bind", "0.0.0.0:8000"]
-
-
-
