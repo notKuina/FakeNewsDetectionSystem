@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-#4kqgg=9_yrehn(6@1ft(=f-o9a6rz4fh2)e%3tnt(+(^p^l4p
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["fakenewsdetectionsystem-production.up.railway.app", "localhost", "127.0.0.1"]
 
 
 # Application definition
